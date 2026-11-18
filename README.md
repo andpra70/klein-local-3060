@@ -165,25 +165,28 @@ POST /text2img -> 200 in 18.45 secondi
 
 ### Modalità di caricamento
 
-La modalità predefinita `nf4` quantizza soltanto il transformer a 4 bit e lascia
-il text encoder in FP16:
+La modalità predefinita `int8` privilegia la velocità di img2img:
 
 ```bash
 ./go.sh
 ```
 
-La vecchia modalità `int8` quantizza anche il text encoder e può produrre
-immagini text-to-image corrotte; è mantenuta soltanto per confronto:
+Per usare sia img2img sia text2img con una qualità valida, selezionare `nf4`.
+Questa modalità quantizza soltanto il transformer a 4 bit e lascia il text
+encoder in FP16:
 
 ```bash
-KLEIN_LOAD_MODE=int8 ./go.sh
+./go.sh nf4
 ```
+
+La modalità `int8` può produrre immagini text-to-image corrotte perché quantizza
+anche il text encoder.
 
 Se la quantizzazione non fosse compatibile con il sistema, è possibile tornare
 alla modalità lenta con CPU offload:
 
 ```bash
-KLEIN_LOAD_MODE=offload ./go.sh
+./go.sh offload
 ```
 
 La modalità offload richiede più trasferimenti tra RAM e GPU e può quindi

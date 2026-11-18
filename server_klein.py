@@ -19,7 +19,7 @@ logger = logging.getLogger("klein-server")
 app = FastAPI()
 
 MODEL_ID = "black-forest-labs/FLUX.2-klein-4B"
-LOAD_MODE = os.environ.get("KLEIN_LOAD_MODE", "nf4").lower()
+LOAD_MODE = os.environ.get("KLEIN_LOAD_MODE", "int8").lower()
 
 load_started_at = time.perf_counter()
 if LOAD_MODE == "nf4":
