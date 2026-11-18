@@ -129,6 +129,14 @@ async def generate_img2img(
     seed: int = Form(-1)
 ):
     validate_steps(steps)
+    logger.info(
+        "Parametri img2img | prompt=%r | steps=%d | guidance_scale=%s | seed=%d",
+        prompt,
+        steps,
+        guidance_scale,
+        seed,
+    )
+
     input_bytes = await image.read()
     init_image = Image.open(io.BytesIO(input_bytes)).convert("RGB")
     
@@ -168,6 +176,17 @@ async def generate_text2img(
         raise HTTPException(400, "width deve essere tra 64 e 1024 e multiplo di 16")
     if not 64 <= height <= 1024 or height % 16 != 0:
         raise HTTPException(400, "height deve essere tra 64 e 1024 e multiplo di 16")
+
+    logger.info(
+        "Parametri text2img | prompt=%r | width=%d | height=%d | "
+        "steps=%d | guidance_scale=%s | seed=%d",
+        prompt,
+        width,
+        height,
+        steps,
+        guidance_scale,
+        seed,
+    )
 
     torch.cuda.reset_peak_memory_stats()
     started_at = time.perf_counter()
