@@ -1,0 +1,26 @@
+--extra-index-url https://download.pytorch.org/whl/cu118
+
+# Runtime CUDA
+torch
+
+# Pipeline FLUX.2 Klein (la versione Git include Flux2KleinPipeline)
+git+https://github.com/huggingface/diffusers.git
+transformers
+accelerate
+huggingface-hub
+safetensors
+
+# Quantizzazione INT8 su GPU NVIDIA
+bitsandbytes
+
+# Tokenizer e serializzazione dei modelli
+sentencepiece
+protobuf
+
+# Server HTTP
+fastapi
+uvicorn
+python-multipart
+
+# Gestione e conversione immagini, usata anche da test.sh
+pillow
