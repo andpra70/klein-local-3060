@@ -2,7 +2,9 @@
 
 set -euo pipefail
 
-OUTPUT_IMAGE="${1:-risultato_text2img.png}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+DATA_DIR="${SCRIPT_DIR}/data"
+OUTPUT_IMAGE="${1:-${DATA_DIR}/risultato_text2img.png}"
 PROMPT="${2:-un gatto che tiene un cartello con la scritta hello world, fotografia cinematografica}"
 TEMP_OUTPUT="$(mktemp --suffix=.png)"
 

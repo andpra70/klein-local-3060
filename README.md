@@ -110,28 +110,76 @@ Lasciare questo terminale aperto durante i test. Per fermare il server premere
 
 ## 5. Testare il server
 
-Aprire un secondo terminale, entrare nella directory del progetto e assicurarsi
-che esista un'immagine chiamata `immagine_partenza.jpg`. Quindi eseguire:
+Aprire un secondo terminale, entrare nella directory del progetto e salvare le
+immagini di input nella directory `data` (per esempio
+`data/immagine_partenza.jpg`). Quindi eseguire:
 
 ```bash
 curl --fail-with-body -X POST "http://127.0.0.1:8000/img2img" \
-  -F "image=@immagine_partenza.jpg" \
+  -F "image=@data/immagine_partenza.jpg" \
   -F "prompt=trasforma in stile cyberpunk al neon, alta qualità" \
   -F "steps=4" \
   -F "guidance_scale=1.0" \
   -F "seed=42" \
-  --output risultato.png
+  --output data/risultato.png
 ```
 
 Se la richiesta termina correttamente, il risultato viene scritto in
-`risultato.png`. Verificarlo con:
+`data/risultato.png`. Verificarlo con:
 
 ```bash
-file risultato.png
+file data/risultato.png
 ```
 
 I parametri `steps`, `guidance_scale` e `seed` sono facoltativi. Un `seed`
 uguale a `-1` genera ogni volta un risultato non deterministico.
+
+### Gestione LoRA per img2img
+
+Il catalogo indicizzato usa gli adapter dichiarati su Hugging Face come compatibili
+con `black-forest-labs/FLUX.2-klein-4B`. Per visualizzarlo (ordinato per download):
+
+```bash
+curl "http://127.0.0.1:8000/loras"
+```
+
+Usare `?refresh=true` per aggiornare subito l'elenco; altrimenti il catalogo viene
+mantenuto per 5 minuti. L'indice appartiene alla fotografia corrente del catalogo:
+prima di conservarlo a lungo è opportuno verificare anche il campo `repo_id`.
+
+Un LoRA può essere scaricato in anticipo nella cache Hugging Face:
+
+```bash
+curl --fail-with-body -X POST "http://127.0.0.1:8000/loras/0/download"
+```
+
+Per attivarlo soltanto durante una richiesta img2img, aggiungere il campo form
+`lora` contenente un oggetto JSON:
+
+```bash
+curl --fail-with-body -X POST "http://127.0.0.1:8000/img2img" \
+  -F "image=@data/test.jpg" \
+  -F "prompt=16-bit pixel art, mantieni il soggetto originale" \
+  -F "steps=4" \
+  -F 'lora={"index":0,"weight":0.8,"parameters":{}}' \
+  --output data/risultato_lora.png
+```
+
+`index` è obbligatorio; `weight` è facoltativo e vale `1.0` per default. I
+parametri opzionali supportati sono `weight_name`, `subfolder` e `revision`, utili
+per repository con più file o revisioni. Se il LoRA non è già in cache viene
+scaricato automaticamente. Al termine della richiesta viene rimosso dalla
+pipeline; le richieste senza `lora` conservano esattamente il flusso precedente.
+
+Per scaricare e provare in sequenza una selezione di LoRA compatibili:
+
+```bash
+./loras.sh data/test.jpg data/risultati_lora
+```
+
+Lo script aggiorna il catalogo, risolve gli indici tramite `repo_id`, scarica
+prima tutti gli adapter e produce sei immagini di test nella directory indicata.
+L'URL del server può essere cambiato con `KLEIN_SERVER_URL`.
 
 ### Test text-to-image
 
@@ -141,16 +189,47 @@ Con il server avviato, eseguire:
 ./test2.sh
 ```
 
-Il risultato predefinito viene salvato in `risultato_text2img.png`. È possibile
+Il risultato predefinito viene salvato in `data/risultato_text2img.png`. È possibile
 specificare nome del file e prompt:
 
 ```bash
-./test2.sh output.png "un piccolo robot in una foresta, luce cinematografica"
+./test2.sh data/output.png "un piccolo robot in una foresta, luce cinematografica"
 ```
 
 L'endpoint `POST /text2img` accetta `prompt`, `width`, `height`, `steps`,
 `guidance_scale` e `seed` come campi form. Larghezza e altezza devono essere
 comprese tra 64 e 1024 e multiple di 16.
+
+### Test multi-image
+
+L'endpoint `POST /multi-img2img` accetta da due a quattro file ripetendo il
+campo form `images`. L'ordine è significativo e può essere richiamato nel prompt
+come `image 1`, `image 2` e così via. Supporta anche lo stesso campo JSON
+opzionale `lora` di `/img2img`. `width` e `height` valgono 512 per default e
+devono essere multipli di 16; aumentare la risoluzione incrementa sensibilmente
+l'uso di VRAM con riferimenti multipli.
+
+Per vestire la persona di `data/test.jpg` con i pantaloni corti mostrati in
+`data/pantaloni.jpg`:
+
+```bash
+./test_multiimage.sh data/test.jpg data/pantaloni.jpg data/risultato_multiimage.png
+```
+
+La chiamata equivalente è:
+
+```bash
+curl --fail-with-body -X POST "http://127.0.0.1:8000/multi-img2img" \
+  -F "images=@data/test.jpg" \
+  -F "images=@data/pantaloni.jpg" \
+  -F "prompt=Dress the person from image 1 with the short pants shown in image 2. Preserve identity, pose and background." \
+  -F "width=512" \
+  -F "height=512" \
+  -F "steps=4" \
+  -F "guidance_scale=1.0" \
+  -F "seed=42" \
+  --output data/risultato_multiimage.png
+```
 
 ## Log dei tempi
 
