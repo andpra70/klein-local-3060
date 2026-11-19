@@ -5,6 +5,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 DATA_DIR="${SCRIPT_DIR}/data"
 SERVER_URL="${KLEIN_SERVER_URL:-http://127.0.0.1:8000}"
+STEPS="${KLEIN_STEPS:-8}"
 INPUT_IMAGE="${1:-${DATA_DIR}/test.jpg}"
 OUTPUT_DIR="${2:-${DATA_DIR}/risultati_lora}"
 TEMP_DIR="$(mktemp -d)"
@@ -163,7 +164,7 @@ print(json.dumps({
       -X POST "${SERVER_URL}/img2img" \
       -F "image=@${input};type=image/png" \
       -F "prompt=${prompt}" \
-      -F "steps=4" \
+      -F "steps=${STEPS}" \
       -F "guidance_scale=1.0" \
       -F "seed=42" \
       -F "lora=${payload}" \

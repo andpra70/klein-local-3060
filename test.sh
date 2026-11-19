@@ -8,6 +8,7 @@ INPUT_IMAGE="${1:-${DATA_DIR}/test.jpg}"
 OUTPUT_IMAGE="${2:-${DATA_DIR}/risultato.png}"
 DEFAULT_PROMPT="mantieni aspetto del soggetto e dell'ambiente nel modo piu assoluto super fedele all'originale trasforma in stile line art shading tecniche antiche di stampa a mano con inchiostro e penna e matita e carboncino e pastello e acquerello e china e penna stilografica e pennello e pennarello e biro e gessetto e sanguigna e tempera e acrilico e olio su tela o carta o legno o metallo o vetro o plastica o ceramica o porcellana o marmo o pietra o cemento o mattoni o sabbia o terra o fango o neve o ghiaccio o acqua o fuoco o fumo "
 PROMPT="${3:-${DEFAULT_PROMPT}}"
+STEPS="${4:-${KLEIN_STEPS:-8}}"
 RESIZED_IMAGE="$(mktemp --suffix=.png)"
 
 cleanup() {
@@ -36,7 +37,7 @@ with Image.open(source) as image:
 curl --fail-with-body -X POST "http://127.0.0.1:8000/img2img" \
   -F "image=@${RESIZED_IMAGE};type=image/png" \
   -F "prompt=${PROMPT}" \
-  -F "steps=4" \
+  -F "steps=${STEPS}" \
   -F "guidance_scale=1.0" \
   -F "seed=42" \
   --output "${OUTPUT_IMAGE}"

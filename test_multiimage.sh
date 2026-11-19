@@ -8,6 +8,7 @@ SERVER_URL="${KLEIN_SERVER_URL:-http://127.0.0.1:8000}"
 PERSON_IMAGE="${1:-${DATA_DIR}/mm.jpg}"
 PANTS_IMAGE="${2:-${DATA_DIR}/pantaloni.jpg}"
 OUTPUT_IMAGE="${3:-${DATA_DIR}/risultato_multiimage.png}"
+STEPS="${4:-${KLEIN_STEPS:-8}}"
 TEMP_DIR="$(mktemp -d)"
 RESPONSE_FILE="${TEMP_DIR}/response.bin"
 
@@ -52,7 +53,7 @@ if ! curl --fail-with-body --silent --show-error \
     -F "prompt=${PROMPT}" \
     -F "width=512" \
     -F "height=512" \
-    -F "steps=4" \
+    -F "steps=${STEPS}" \
     -F "guidance_scale=1.0" \
     -F "seed=42" \
     --output "${RESPONSE_FILE}"; then

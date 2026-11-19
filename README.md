@@ -118,7 +118,7 @@ immagini di input nella directory `data` (per esempio
 curl --fail-with-body -X POST "http://127.0.0.1:8000/img2img" \
   -F "image=@data/immagine_partenza.jpg" \
   -F "prompt=trasforma in stile cyberpunk al neon, alta qualità" \
-  -F "steps=4" \
+  -F "steps=8" \
   -F "guidance_scale=1.0" \
   -F "seed=42" \
   --output data/risultato.png
@@ -131,8 +131,24 @@ Se la richiesta termina correttamente, il risultato viene scritto in
 file data/risultato.png
 ```
 
-I parametri `steps`, `guidance_scale` e `seed` sono facoltativi. Un `seed`
+I parametri `steps`, `guidance_scale` e `seed` sono facoltativi. `steps` vale 8
+per default; il limite massimo predefinito è 50. Un `seed`
 uguale a `-1` genera ogni volta un risultato non deterministico.
+
+Il default e il limite del server sono configurabili all'avvio:
+
+```bash
+KLEIN_DEFAULT_STEPS=12 KLEIN_MAX_STEPS=60 ./go.sh nf4
+```
+
+Gli script di test usano 8 step per default. È possibile cambiarli con
+`KLEIN_STEPS`, oppure passando il numero come ultimo argomento:
+
+```bash
+KLEIN_STEPS=12 ./test.sh
+./test2.sh data/output.png "un robot nella foresta" 12
+./test_multiimage.sh data/mm.jpg data/pantaloni.jpg data/output.png 12
+```
 
 ### Gestione LoRA per img2img
 
@@ -160,7 +176,7 @@ Per attivarlo soltanto durante una richiesta img2img, aggiungere il campo form
 curl --fail-with-body -X POST "http://127.0.0.1:8000/img2img" \
   -F "image=@data/test.jpg" \
   -F "prompt=16-bit pixel art, mantieni il soggetto originale" \
-  -F "steps=4" \
+  -F "steps=8" \
   -F 'lora={"index":0,"weight":0.8,"parameters":{}}' \
   --output data/risultato_lora.png
 ```
@@ -225,7 +241,7 @@ curl --fail-with-body -X POST "http://127.0.0.1:8000/multi-img2img" \
   -F "prompt=Dress the person from image 1 with the short pants shown in image 2. Preserve identity, pose and background." \
   -F "width=512" \
   -F "height=512" \
-  -F "steps=4" \
+  -F "steps=8" \
   -F "guidance_scale=1.0" \
   -F "seed=42" \
   --output data/risultato_multiimage.png

@@ -39,6 +39,12 @@ inference_lock = asyncio.Lock()
 
 MODEL_ID = "black-forest-labs/FLUX.2-klein-4B"
 LOAD_MODE = os.environ.get("KLEIN_LOAD_MODE", "int8").lower()
+DEFAULT_STEPS = int(os.environ.get("KLEIN_DEFAULT_STEPS", "8"))
+MAX_STEPS = int(os.environ.get("KLEIN_MAX_STEPS", "50"))
+if not 1 <= DEFAULT_STEPS <= MAX_STEPS:
+    raise RuntimeError(
+        "KLEIN_DEFAULT_STEPS deve essere compreso tra 1 e KLEIN_MAX_STEPS"
+    )
 lora_manager = LoraManager(MODEL_ID)
 
 load_started_at = time.perf_counter()
@@ -146,10 +152,10 @@ async def read_rgb_image(upload: UploadFile) -> Image.Image:
 
 
 def validate_steps(steps: int) -> None:
-    if not 1 <= steps <= 4:
+    if not 1 <= steps <= MAX_STEPS:
         raise HTTPException(
             status_code=400,
-            detail="FLUX.2 Klein è distillato per un massimo di 4 step; usare un valore tra 1 e 4",
+            detail=f"steps deve essere compreso tra 1 e {MAX_STEPS}",
         )
 
 
@@ -252,7 +258,7 @@ async def exclusive_inference(endpoint: str):
 async def generate_img2img(
     image: UploadFile = File(...),
     prompt: str = Form(...),
-    steps: int = Form(4),
+    steps: int = Form(DEFAULT_STEPS),
     guidance_scale: float = Form(1.0),
     seed: int = Form(-1),
     lora: str | None = Form(None),
@@ -335,7 +341,7 @@ async def generate_multi_img2img(
     prompt: str = Form(...),
     width: int = Form(512),
     height: int = Form(512),
-    steps: int = Form(4),
+    steps: int = Form(DEFAULT_STEPS),
     guidance_scale: float = Form(1.0),
     seed: int = Form(-1),
     lora: str | None = Form(None),
@@ -425,7 +431,7 @@ async def generate_text2img(
     prompt: str = Form(...),
     width: int = Form(512),
     height: int = Form(512),
-    steps: int = Form(4),
+    steps: int = Form(DEFAULT_STEPS),
     guidance_scale: float = Form(1.0),
     seed: int = Form(-1),
 ):

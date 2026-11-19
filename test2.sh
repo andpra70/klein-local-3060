@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 DATA_DIR="${SCRIPT_DIR}/data"
 OUTPUT_IMAGE="${1:-${DATA_DIR}/risultato_text2img.png}"
 PROMPT="${2:-un gatto che tiene un cartello con la scritta hello world, fotografia cinematografica}"
+STEPS="${3:-${KLEIN_STEPS:-8}}"
 TEMP_OUTPUT="$(mktemp --suffix=.png)"
 
 cleanup() {
@@ -20,7 +21,7 @@ curl --fail-with-body -X POST "http://127.0.0.1:8000/text2img" \
   -F "prompt=${PROMPT}" \
   -F "width=512" \
   -F "height=512" \
-  -F "steps=4" \
+  -F "steps=${STEPS}" \
   -F "guidance_scale=1.0" \
   -F "seed=42" \
   --output "${TEMP_OUTPUT}"
