@@ -2,6 +2,37 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+CONDA_ENV="flux-klein"
+
+activate_conda_environment() {
+  if [[ "${CONDA_DEFAULT_ENV:-}" == "${CONDA_ENV}" ]]; then
+    return
+  fi
+
+  local conda_base=""
+  if command -v conda >/dev/null 2>&1; then
+    conda_base="$(conda info --base)"
+  else
+    local candidate
+    for candidate in "${HOME}/miniconda3" "${HOME}/anaconda3" "/opt/conda"; do
+      if [[ -f "${candidate}/etc/profile.d/conda.sh" ]]; then
+        conda_base="${candidate}"
+        break
+      fi
+    done
+  fi
+
+  if [[ -z "${conda_base}" || ! -f "${conda_base}/etc/profile.d/conda.sh" ]]; then
+    echo "Errore: Conda non trovato. Installa Miniconda o rendi disponibile il comando conda." >&2
+    exit 1
+  fi
+
+  # shellcheck disable=SC1091
+  source "${conda_base}/etc/profile.d/conda.sh"
+  conda activate "${CONDA_ENV}"
+}
+
 show_help() {
   cat <<'EOF'
 Uso:
@@ -51,14 +82,13 @@ case "${1:-int8}" in
     ;;
 esac
 
-if [[ "${CONDA_DEFAULT_ENV:-}" != "flux-klein" ]]; then
-  echo "Errore: attiva prima l'ambiente con: conda activate flux-klein" >&2
-  exit 1
-fi
+activate_conda_environment
+cd "${SCRIPT_DIR}"
 
 export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
 export KLEIN_LOAD_MODE="${LOAD_MODE}"
 
+echo "Ambiente Conda: ${CONDA_DEFAULT_ENV}"
 echo "Avvio Klein in modalità: ${KLEIN_LOAD_MODE}"
 
 exec python server_klein.py
