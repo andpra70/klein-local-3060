@@ -99,3 +99,31 @@ class LoraManager:
             allow_patterns=["*.safetensors", "*.json", "**/*.safetensors", "**/*.json"],
         )
         return item, Path(local_path)
+
+    def download_repo(
+        self,
+        repo_id: str,
+        *,
+        revision: str | None = None,
+    ) -> Path:
+        """Scarica un adapter indicato direttamente, senza passare dal catalogo."""
+        local_path = snapshot_download(
+            repo_id=repo_id,
+            revision=revision,
+            cache_dir=self.cache_dir,
+            allow_patterns=["*.safetensors", "*.json", "**/*.safetensors", "**/*.json"],
+        )
+        return Path(local_path)
+
+    def declared_base_models(self, repo_id: str) -> list[str]:
+        """Restituisce i modelli base dichiarati nella model card dell'adapter."""
+        info = self._api.model_info(repo_id)
+        card_data = getattr(info, "card_data", None)
+        base_model = getattr(card_data, "base_model", None)
+        if base_model is None and isinstance(card_data, dict):
+            base_model = card_data.get("base_model")
+        if isinstance(base_model, str):
+            return [base_model]
+        if isinstance(base_model, list):
+            return [item for item in base_model if isinstance(item, str)]
+        return []

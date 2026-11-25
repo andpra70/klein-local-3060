@@ -169,8 +169,9 @@ Un LoRA può essere scaricato in anticipo nella cache Hugging Face:
 curl --fail-with-body -X POST "http://127.0.0.1:8000/loras/0/download"
 ```
 
-Per attivarlo soltanto durante una richiesta img2img, aggiungere il campo form
-`lora` contenente un oggetto JSON:
+Per attivarlo soltanto durante una richiesta, aggiungere il campo form `lora`
+contenente un oggetto JSON. È supportato da `/img2img`, `/multi-img2img` e
+`/text2img`:
 
 ```bash
 curl --fail-with-body -X POST "http://127.0.0.1:8000/img2img" \
@@ -181,11 +182,12 @@ curl --fail-with-body -X POST "http://127.0.0.1:8000/img2img" \
   --output data/risultato_lora.png
 ```
 
-`index` è obbligatorio; `weight` è facoltativo e vale `1.0` per default. I
-parametri opzionali supportati sono `weight_name`, `subfolder` e `revision`, utili
-per repository con più file o revisioni. Se il LoRA non è già in cache viene
-scaricato automaticamente. Al termine della richiesta viene rimosso dalla
-pipeline; le richieste senza `lora` conservano esattamente il flusso precedente.
+Specificare uno solo tra `index` e `repo_id`; `weight` è facoltativo e vale
+`1.0`. Il payload può anche essere una lista di massimo quattro adapter. I
+parametri opzionali supportati sono `weight_name`, `subfolder` e `revision`,
+utili per repository con più file o revisioni. Se il LoRA non è già in cache
+viene scaricato automaticamente. Al termine della richiesta viene rimosso dalla
+pipeline.
 
 Per scaricare e provare in sequenza una selezione di LoRA compatibili:
 
@@ -282,6 +284,70 @@ alla modalità lenta con CPU offload:
 
 ```bash
 ./go.sh offload
+```
+
+## Backend FLUX.1 e preset LoRA
+
+Klein resta il backend predefinito:
+
+```bash
+./go.sh klein nf4
+```
+
+Per usare i LoRA FLUX.1 avviare il backend dedicato. Su RTX 3060 12 GB la
+modalità consigliata è NF4; il primo avvio scarica `FLUX.1-dev`:
+
+```bash
+./go.sh flux1 nf4
+```
+
+Se Hugging Face restituisce `401` o `403`, accettare prima la licenza sulla
+pagina di `black-forest-labs/FLUX.1-dev` e autenticare l'ambiente con
+il comando seguente (la CLI `hf` è installata nell'ambiente Conda del progetto):
+
+```bash
+conda activate flux-klein
+hf auth login
+```
+
+Il backend FLUX.1 supporta i preset `adult`, `anatomy`, `latex` e
+`adult-latex`. Per provarli:
+
+```bash
+./test_anatomy.sh
+./test_latex.sh
+./test_adult_latex.sh
+```
+
+`POST /text2img` e `POST /img2img` accettano il campo form `preset`. Il backend
+FLUX.1 non implementa `/multi-img2img`; quell'endpoint resta disponibile con
+Klein.
+
+In alternativa il campo `lora` accetta una lista JSON di massimo quattro
+adapter, identificati direttamente tramite `repo_id`:
+
+```bash
+curl --fail-with-body -X POST "http://127.0.0.1:8000/text2img" \
+  -F "prompt=editorial photograph of an adult model wearing black latex" \
+  -F 'lora=[{"repo_id":"lustlyai/Flux_Lustly.ai_Uncensored_nsfw_v1","weight":0.75},{"repo_id":"Muapi/latex-under-clothing-flux1.d","weight":0.8,"parameters":{"weight_name":"latex-under-clothing-flux1.d.safetensors"}}]' \
+  -F "width=768" -F "height=768" -F "steps=28" \
+  -F "guidance_scale=3.5" --output data/output.png
+```
+
+Il vecchio oggetto `{"index": ..., "weight": ...}` resta supportato. Non si
+possono combinare adapter FLUX.1 con Klein o adapter Klein con FLUX.1. FLUX.1-dev
+è distribuito con licenza non commerciale; verificare sempre anche la licenza
+del singolo LoRA.
+
+Il server non contiene un safety checker o una blacklist applicativa. I pesi
+alternativi vanno usati esclusivamente nel rispetto della legge e dei diritti
+delle persone, con soggetti adulti consenzienti e senza immagini intime non
+consensuali.
+
+Per cambiare il repository del backend selezionato:
+
+```bash
+KLEIN_MODEL_ID=organizzazione/modello-compatibile ./go.sh flux1 nf4
 ```
 
 La modalità offload richiede più trasferimenti tra RAM e GPU e può quindi

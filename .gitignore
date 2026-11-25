@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
+loras/klein
 
 # Ambienti virtuali e Conda locali
 .venv/

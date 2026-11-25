@@ -36,7 +36,11 @@ activate_conda_environment() {
 show_help() {
   cat <<'EOF'
 Uso:
-  ./go.sh [MODALITA]
+  ./go.sh [BACKEND] [MODALITA]
+
+Backend disponibili:
+  klein    Predefinito. FLUX.2 Klein 4B, veloce e con multi-image.
+  flux1    FLUX.1-dev, compatibile con i preset adult/anatomy/latex.
 
 Modalità disponibili:
   int8     Predefinita. Transformer e text encoder in INT8.
@@ -44,52 +48,70 @@ Modalità disponibili:
            produrre immagini corrotte o illeggibili.
 
   nf4      Transformer NF4 a 4 bit e text encoder FP16, tutto in VRAM.
-           Compromesso consigliato per usare sia img2img (~6 s) sia text2img
-           con qualità valida. NF4 richiede dequantizzazione durante il calcolo.
+           Con FLUX.1 anche il secondo text encoder viene quantizzato per
+           rientrare nella VRAM. Compromesso consigliato sulla RTX 3060.
 
   offload  Modello BF16 senza quantizzazione, con CPU offload.
            Qualità di riferimento per img2img e text2img, ma molto lento
            (~44 s) a causa dei trasferimenti tra RAM e GPU.
 
 Esempi:
-  ./go.sh             # equivale a: ./go.sh int8
-  ./go.sh nf4
-  ./go.sh offload
+  ./go.sh                    # equivale a: ./go.sh klein int8
+  ./go.sh klein nf4
+  ./go.sh flux1 nf4          # consigliato per RTX 3060 12 GB
+  ./go.sh flux1 offload      # più lento, usa più RAM di sistema
   ./go.sh --help
 
 I tempi sono indicativi e derivano dai test su RTX 3060 12 GB.
 EOF
 }
 
-if (( $# > 1 )); then
-  echo "Errore: specificare al massimo una modalità." >&2
-  show_help >&2
-  exit 2
-fi
+LOAD_MODE="int8"
+MODE_SET=0
+BACKEND="klein"
+BACKEND_SET=0
 
-case "${1:-int8}" in
-  -h|--help|help)
-    show_help
-    exit 0
-    ;;
-  int8|nf4|offload)
-    LOAD_MODE="${1:-int8}"
-    ;;
-  *)
-    echo "Errore: modalità non valida: $1" >&2
-    show_help >&2
-    exit 2
-    ;;
-esac
+for argument in "$@"; do
+  case "${argument}" in
+    -h|--help|help)
+      show_help
+      exit 0
+      ;;
+    int8|nf4|offload)
+      if (( MODE_SET )); then
+        echo "Errore: specificare una sola modalità." >&2
+        show_help >&2
+        exit 2
+      fi
+      LOAD_MODE="${argument}"
+      MODE_SET=1
+      ;;
+    klein|flux1)
+      if (( BACKEND_SET )); then
+        echo "Errore: specificare un solo backend." >&2
+        exit 2
+      fi
+      BACKEND="${argument}"
+      BACKEND_SET=1
+      ;;
+    *)
+      echo "Errore: argomento non valido: ${argument}" >&2
+      show_help >&2
+      exit 2
+      ;;
+  esac
+done
 
 activate_conda_environment
 cd "${SCRIPT_DIR}"
 
 export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
 export KLEIN_LOAD_MODE="${LOAD_MODE}"
+export KLEIN_BACKEND="${BACKEND}"
 
 echo "Ambiente Conda: ${CONDA_DEFAULT_ENV}"
-echo "Avvio Klein in modalità: ${KLEIN_LOAD_MODE}"
+echo "Backend: ${KLEIN_BACKEND}"
+echo "Modalità: ${KLEIN_LOAD_MODE}"
 
 exec python server_klein.py
 
